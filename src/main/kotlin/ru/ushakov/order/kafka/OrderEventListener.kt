@@ -146,7 +146,9 @@ data class BillingFailedEvent(
 )
 
 data class ItemReservedEvent(
-    val orderId: Long
+    val orderId: Long,
+    val deliveryDate: LocalDate,
+    val deliveryAddress: String
 )
 
 data class ItemReserveFailedEvent(
