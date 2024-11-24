@@ -3,6 +3,7 @@ package ru.ushakov.order.controller
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import ru.ushakov.order.OrderService
 import ru.ushakov.order.domain.Item
 import ru.ushakov.order.domain.Order
 import ru.ushakov.order.domain.OrderStatus
@@ -15,34 +16,17 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/orders")
 class OrderController @Autowired constructor(
+    private val orderService: OrderService,
     private val orderRepository: OrderRepository,
     private val orderEventProducer: OrderEventProducer
 ) {
 
     @PostMapping
     fun createOrder(
+        @RequestHeader("X-Request-ID") transactionKey: String,
         @RequestBody request: CreateOrderRequest
     ): ResponseEntity<Any> {
-        val order = Order(
-            items = request.items,
-            totalPrice = request.items.sumOf { it.price.multiply(BigDecimal(it.quantity)) },
-            accountNumber = request.accountNumber,
-            deliveryAddress = request.deliveryAddress,
-            deliveryDate = request.deliveryDate,
-            status = OrderStatus.CREATED
-        )
-
-        orderRepository.save(order)
-
-        val event = OrderCreatedEvent(
-            orderId = order.id,
-            items = request.items,
-            totalPrice = order.totalPrice,
-            accountNumber = order.accountNumber,
-            deliveryAddress = order.deliveryAddress,
-            deliveryDate = order.deliveryDate
-        )
-        orderEventProducer.sendOrderCreatedEvent(event)
+        val order = orderService.createOrder(request, transactionKey)
         return ResponseEntity.ok(order)
     }
 
